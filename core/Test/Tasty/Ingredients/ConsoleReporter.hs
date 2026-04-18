@@ -49,6 +49,7 @@ import Test.Tasty.Patterns.Types
 import Test.Tasty.Runners.Reducers
 import Test.Tasty.Runners.Utils
 import Text.Printf
+import Text.Read (readMaybe)
 import qualified Data.IntMap as IntMap
 import qualified Data.IntSet as IntSet
 import Data.Char
@@ -61,6 +62,7 @@ import Data.Monoid (Any(..))
 import qualified Data.Semigroup as Sem
 import Data.Typeable
 import Options.Applicative hiding (action, str, Success, Failure)
+import System.Environment (lookupEnv)
 import System.IO
 import System.Console.ANSI
 #if !MIN_VERSION_base(4,11,0)
@@ -133,9 +135,17 @@ type Level = Int
 terminalWidth :: Maybe Int
 terminalWidth = unsafePerformIO $ do
   isTerminalStdin <- hIsTerminalDevice stdin
-  if isTerminalStdin
-  then fmap (fmap snd) getTerminalSize
-  else pure Nothing
+  result <-
+    if isTerminalStdin
+    then do
+      mcols <- lookupEnv "COLUMNS"
+      case readMaybe =<< mcols of
+        size@(Just size')
+          | size' > 0
+          -> pure size
+        _ -> fmap (fmap snd) getTerminalSize
+    else pure Nothing
+  pure result
 {-# NOINLINE terminalWidth #-}
 
 -- | How wide could 'resultShortDescription' be (in non-extreme scenarios)?
