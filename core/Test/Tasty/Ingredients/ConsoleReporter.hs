@@ -68,6 +68,10 @@ import Data.Foldable (foldMap)
 #endif
 import System.IO.Unsafe
 
+#if defined(MIN_VERSION_terminal_size)
+import qualified System.Console.Terminal.Size as TermSize
+#endif
+
 --------------------------------------------------
 -- TestOutput base definitions
 --------------------------------------------------
@@ -137,7 +141,11 @@ terminalWidth isTermWithTricks = unsafePerformIO $ do
     isTerminalStdin <- hIsTerminalDevice stdin
     if isTerminalStdin
     then
+#if defined(MIN_VERSION_terminal_size)
+      fmap (fmap TermSize.width) TermSize.size
+#else
       fmap (fmap snd) getTerminalSize
+#endif
     else pure Nothing
   else pure Nothing
 {-# NOINLINE terminalWidth #-}
